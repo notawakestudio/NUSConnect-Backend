@@ -6,6 +6,8 @@ deta = Deta()
 
 db_question = deta.Base("nusconnect")
 db_quiz = deta.Base("nusconnect-quiz")
+db_post = deta.Base("nusconnect-post")
+db_reply = deta.Base("nusconnect-reply")
 
 app = Flask(__name__)
 CORS(app)
@@ -73,3 +75,78 @@ def postQuiz():
     result = db_quiz.put(request.json, data['id'])
     return jsonify(result, 201)
 
+
+#### FORUM STUFF ###################################
+
+@app.route('/post/make', methods=["POST"])
+def postPost():
+    data = request.get_json(force=True)
+    if data is None:
+        return jsonify({"error":"Not in JSON format"})
+    if 'id' not in data:
+        return jsonify({"error":"No ID"})
+    if 'content' not in data:
+        return jsonify({"error":"No content"})
+    if 'title' not in data:
+        return jsonify({"error":"No title"})
+    if 'reply_count' not in data:
+        return jsonify({"error":"No reply count"})
+    if 'tags' not in data:
+        return jsonify({"error":"No tags"})
+    if 'week' not in data:
+        return jsonify({"error":"No week"})
+    if 'author_id' not in data:
+        return jsonify({"error":"No author"})
+    if 'created_date' not in data:
+        return jsonify({"error":"No created date"}) 
+    if 'edited_date' not in data:
+        return jsonify({"error":"No edited date"}) 
+    if 'up_votes' not in data:
+        return jsonify({"error":"No up votes"}) 
+    if 'is_edited' not in data:
+        return jsonify({"error":"No is edited"}) 
+    # use id received as key in deta base
+    result = db_post.put(request.json, data['id'])
+    return jsonify(result, 201)
+
+
+@app.route('/reply/make', methods=["POST"])
+def postReply():
+    data = request.get_json(force=True)
+    if data is None:
+        return jsonify({"error":"Not in JSON format"})
+    if 'id' not in data:
+        return jsonify({"error":"No ID"})
+    if 'post_id' not in data:
+        return jsonify({"error":"No post_id"})
+    if 'author_id' not in data:
+        return jsonify({"error":"No author_id"})
+    if 'content' not in data:
+        return jsonify({"error":"No content"})
+    if 'created_date' not in data:
+        return jsonify({"error":"No created_date"})
+    if 'edited_date' not in data:
+        return jsonify({"error":"No edited_date"})
+    if 'up_votes' not in data:
+        return jsonify({"error":"No up_votes"})
+    if 'is_edited' not in data:
+        return jsonify({"error":"No is_edited"})
+    # use id received as key in deta base
+    result = db_reply.put(request.json, data['id'])
+    return jsonify(result, 201)
+
+@app.route('/forum/post', methods=["GET"])
+def getAllPost():
+    return jsonify(next(db_post.fetch()))
+
+@app.route('/forum/reply', methods=["GET"])
+def getAllReply():
+    return jsonify(next(db_reply.fetch()))
+
+@app.route('/forum/post/<postId>', methods=["GET"])
+def getPostById(postId):
+    return jsonify(db_post.get(postId))
+
+@app.route('/forum/reply/<replyId>', methods=["GET"])
+def getReplyById(replyId):
+    return jsonify(db_reply.get(replyId))
