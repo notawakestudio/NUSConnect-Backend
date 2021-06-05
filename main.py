@@ -8,6 +8,7 @@ db_question = deta.Base("nusconnect")
 db_quiz = deta.Base("nusconnect-quiz")
 db_post = deta.Base("nusconnect-post")
 db_reply = deta.Base("nusconnect-reply")
+db_module = deta.Base("nusconnect-module")
 
 app = Flask(__name__)
 CORS(app)
@@ -150,3 +151,37 @@ def getPostById(postId):
 @app.route('/forum/reply/<replyId>', methods=["GET"])
 def getReplyById(replyId):
     return jsonify(db_reply.get(replyId))
+
+#### MODULE STUFF ###################################
+
+
+@app.route('/module/make', methods=["POST"])
+def postModule():
+    data = request.get_json(force=True)
+    if data is None:
+        return jsonify({"error":"Not in JSON format"})
+    if 'id' not in data:
+        return jsonify({"error":"No ID"})
+    if 'title' not in data:
+        return jsonify({"error":"No title"})
+    if 'users' not in data:
+        return jsonify({"error":"No users"})
+    if 'questions' not in data:
+        return jsonify({"error":"No questions"})
+    if 'quiz' not in data:
+        return jsonify({"error":"No quiz"})
+    if 'forum' not in data:
+        return jsonify({"error":"No forum"})
+    if 'reply' not in data:
+        return jsonify({"error":"No reply"})
+    if 'tasks' not in data:
+        return jsonify({"error":"No tasks"})
+    if 'schedule' not in data:
+        return jsonify({"error":"No schedule"})
+    # use id received as key in deta base
+    result = db_module.put(request.json, data['id'])
+    return jsonify(result, 201)
+
+@app.route('/module', methods=["GET"])
+def getAllModule():
+    return jsonify(next(db_module.fetch()))
