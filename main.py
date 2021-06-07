@@ -163,6 +163,10 @@ def delete_post(postId):
 def getReplyById(replyId):
     return jsonify(db_reply.get(replyId))
 
+@app.route('/forum/reply/related/<postId>', methods=["GET"])
+def getRelatedRepliesByPostId(postId):
+    return jsonify(next(db_reply.fetch({"post_id":postId})))
+
 @app.route("/reply/update/<replyId>", methods=["POST"])
 def update_reply(replyId):
     data = request.get_json(force=True)
