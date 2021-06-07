@@ -148,6 +148,17 @@ def getAllReply():
 def getPostById(postId):
     return jsonify(db_post.get(postId))
 
+@app.route("/post/update/<postId>", methods=["POST"])
+def update_post(postId):
+    data = request.get_json(force=True)
+    post = db_post.update(data, postId)
+    return data
+    
+@app.route("/post/update/<postId>", methods=["DELETE"])
+def delete_post(postId):
+    db_post.delete(postId)
+    return 'DONE'
+
 @app.route('/forum/reply/<replyId>', methods=["GET"])
 def getReplyById(replyId):
     return jsonify(db_reply.get(replyId))
@@ -157,6 +168,11 @@ def update_reply(replyId):
     data = request.get_json(force=True)
     reply = db_reply.update(data, replyId)
     return reply
+
+@app.route("/reply/update/<replyId>", methods=["DELETE"])
+def delete_reply(replyId):
+    db_reply.delete(replyId)
+    return 'DONE'
 
 @app.route("/reply/update/likes/<replyId>", methods=["POST"])
 def update_reply_likes(replyId):
