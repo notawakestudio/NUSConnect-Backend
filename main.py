@@ -157,7 +157,10 @@ def update_post(postId):
 @app.route("/post/update/<postId>", methods=["DELETE"])
 def delete_post(postId):
     db_post.delete(postId)
-    return 'DONE'
+    list_of_replies = list(next(db_reply.fetch({"post_id":postId})))
+    for reply in list_of_replies:
+        db_reply.delete(reply.get('id'))
+    return "Deleted!"
 
 @app.route('/forum/reply/<replyId>', methods=["GET"])
 def getReplyById(replyId):
