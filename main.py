@@ -185,13 +185,13 @@ def delete_reply(replyId):
 def update_reply_likes(replyId):
     data = request.get_json(force=True)
     reply = db_reply.update(data, replyId)
-    return jsonify(reply)
+    return 'DONE'
 
 @app.route("/post/update/likes/<postId>", methods=["POST"])
 def update_post_likes(postId):
     data = request.get_json(force=True)
     post = db_post.update(data, postId)
-    return post
+    return 'DONE'
 
 #### MODULE STUFF ###################################
 
