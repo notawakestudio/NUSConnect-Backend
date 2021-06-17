@@ -9,6 +9,7 @@ db_quiz = deta.Base("nusconnect-quiz")
 db_post = deta.Base("nusconnect-post")
 db_reply = deta.Base("nusconnect-reply")
 db_module = deta.Base("nusconnect-module")
+db_user = deta.Base("nusconnect-user")
 
 app = Flask(__name__)
 CORS(app)
@@ -226,3 +227,49 @@ def postModule():
 @app.route('/module', methods=["GET"])
 def getAllModule():
     return jsonify(next(db_module.fetch()))
+
+#### USER DATA STUFF ############
+
+@app.route('/user/make', methods=["POST"])
+def postUser():
+    data = request.get_json(force=True)
+    if data is None:
+        return jsonify({"error":"Not in JSON format"})
+    if 'id' not in data:
+        return jsonify({"error":"No ID"})
+    if 'modules' not in data:
+        return jsonify({"error":"No modules"})
+    if 'profilePicUrl' not in data:
+        return jsonify({"error":"No profilePicUrl"})
+    if 'role' not in data:
+        return jsonify({"error":"No role"})
+    if 'userName' not in data:
+        return jsonify({"error":"No string"})
+    if 'displayName' not in data:
+        return jsonify({"error":"No displayName"})
+    if 'email' not in data:
+        return jsonify({"error":"No email"})
+    if 'created_date' not in data:
+        return jsonify({"error":"No created_date"})
+    # use id received as key in deta base
+    result = db_user.put(request.json, data['id'])
+    return jsonify(result, 201)
+
+@app.route('/user/<userId>', methods=["GET"])
+def getUser(userId):
+    return jsonify(db_user.get(userId))
+
+@app.route('/user/check/<userId>', methods=["GET"])
+def checkUserExists(userId):
+    result = db_user.get(userId) 
+    if result is None:
+        print("no such user")
+        return jsonify({"exist": False})
+    print("user exists")
+    return jsonify({"exist": True})
+
+@app.route("/user/update/<userId>", methods=["POST"])
+def update_user(userId):
+    data = request.get_json(force=True)
+    updated = db_user.update(data, userId)
+    return data
