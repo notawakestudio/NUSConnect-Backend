@@ -273,3 +273,33 @@ def update_user(userId):
     data = request.get_json(force=True)
     updated = db_user.update(data, userId)
     return data
+
+@app.route('/user/inbox/<userId>', methods=["GET"])
+def getUserInbox(userId):
+    user = db_user.get(userId)
+    return jsonify(user['inbox'])
+
+@app.route('/user/inbox/make/<userId>', methods=["POST"])
+def submitToUserInbox(userId):
+    user = db_user.get(userId)
+    data = request.get_json(force=True)
+    currentInbox = user.get('inbox')
+    if not currentInbox:
+        user['inbox'] = [data]
+    else:
+        user['inbox'].append(data)
+    db_user.put(user, userId)
+    return "success"
+
+@app.route('/user/inbox/read/<userId>', methods=["POST"])
+def markMessageAsRead(userId):
+    user = db_user.get(userId)
+    data = request.get_json(force=True)
+    currentInbox = user.get('inbox')
+    if not currentInbox:
+        return "failed"
+    for message in user['inbox']:
+        if message.get('id') == data.get('id'):
+            message['read'] = True
+    db_user.put(user, userId)
+    return "success"
