@@ -303,3 +303,7 @@ def markMessageAsRead(userId):
             message['read'] = True
     db_user.put(user, userId)
     return "success"
+
+@app.route('/user/all', methods=["GET"])
+def getAllUser():
+    return jsonify(next(db_user.fetch()))
