@@ -196,7 +196,6 @@ def update_post_likes(postId):
 
 #### MODULE STUFF ###################################
 
-
 @app.route('/module/make', methods=["POST"])
 def postModule():
     data = request.get_json(force=True)
@@ -210,16 +209,14 @@ def postModule():
         return jsonify({"error":"No users"})
     if 'questions' not in data:
         return jsonify({"error":"No questions"})
-    if 'quiz' not in data:
-        return jsonify({"error":"No quiz"})
-    if 'forum' not in data:
-        return jsonify({"error":"No forum"})
-    if 'reply' not in data:
-        return jsonify({"error":"No reply"})
-    if 'tasks' not in data:
-        return jsonify({"error":"No tasks"})
-    if 'schedule' not in data:
-        return jsonify({"error":"No schedule"})
+    if 'quizzes' not in data:
+        return jsonify({"error":"No quizzes"})
+    if 'posts' not in data:
+        return jsonify({"error":"No posts"})
+    if 'replies' not in data:
+        return jsonify({"error":"No replies"})
+    if 'schedules' not in data:
+        return jsonify({"error":"No schedules"})
     # use id received as key in deta base
     result = db_module.put(request.json, data['id'])
     return jsonify(result, 201)
