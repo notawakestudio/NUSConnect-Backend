@@ -215,8 +215,10 @@ def postModule():
         return jsonify({"error":"No posts"})
     if 'replies' not in data:
         return jsonify({"error":"No replies"})
-    if 'schedules' not in data:
-        return jsonify({"error":"No schedules"})
+    if 'announcements' not in data:
+        return jsonify({"error":"No announcements"})
+    if 'quests' not in data:
+        return jsonify({"error":"No quests"})
     # use id received as key in deta base
     result = db_module.put(request.json, data['id'])
     return jsonify(result, 201)
@@ -233,8 +235,26 @@ def getModule(moduleId):
 def makeAnnoucement(moduleId):
     module = db_module.get(moduleId)
     data = request.get_json(force=True)
-    currentAnnouncements = module.get('schedules')[0].get('announcements')
+    currentAnnouncements = module.get('announcements')
     currentAnnouncements.append(data)
+    db_module.put(module, moduleId)
+    return "success"
+
+@app.route('/module/announcement/delete/<moduleId>/<announcementId>', methods=["DELETE"])
+def deleteAnnoucement(moduleId, announcementId):
+    module = db_module.get(moduleId)
+    currentAnnouncements = module.get('announcements')
+    module['announcements'] = [announcement for announcement in currentAnnouncements if announcement.get('id') != announcementId]
+    db_module.put(module, moduleId)
+    return "success"
+
+@app.route('/module/announcement/update/<moduleId>/<announcementId>', methods=["POST"])
+def updateAnnoucement(moduleId, announcementId):
+    data = request.get_json(force=True)
+    module = db_module.get(moduleId)
+    currentAnnouncements = module.get('announcements')
+    module['announcements'] = [announcement for announcement in currentAnnouncements if announcement.get('id') != announcementId]
+    module['announcements'].append(data)
     db_module.put(module, moduleId)
     return "success"
 
