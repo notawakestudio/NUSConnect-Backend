@@ -225,6 +225,19 @@ def postModule():
 def getAllModule():
     return jsonify(next(db_module.fetch()))
 
+@app.route('/module/<moduleId>', methods=["GET"])
+def getModule(moduleId):
+    return jsonify(db_module.get(moduleId))
+
+@app.route('/module/announcement/make/<moduleId>', methods=["POST"])
+def makeAnnoucement(moduleId):
+    module = db_module.get(moduleId)
+    data = request.get_json(force=True)
+    currentAnnouncements = module.get('schedules')[0].get('announcements')
+    currentAnnouncements.append(data)
+    db_module.put(module, moduleId)
+    return "success"
+
 #### USER DATA STUFF ############
 
 @app.route('/user/make', methods=["POST"])
