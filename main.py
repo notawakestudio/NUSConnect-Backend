@@ -231,6 +231,30 @@ def getAllModule():
 def getModule(moduleId):
     return jsonify(db_module.get(moduleId))
 
+@app.route('/module/addUser', methods=["POST"])
+def addUserToModule():
+    data = request.get_json(force=True)
+    module = db_module.get(data.get("moduleId"))
+    module["users"].append(data["userId"])
+    db_module.put(module, data.get("moduleId"))
+
+    user = db_user.get(data.get("userId"))
+    user["modules"].append(data.get("moduleUserInfo"))
+    db_user.put(user, data.get("userId"))
+    return "success"
+
+@app.route('/module/removeUser', methods=["POST"])
+def removeUserFromModule():
+    data = request.get_json(force=True)
+    module = db_module.get(data.get("moduleId"))
+    module["users"].remove(data["userId"])
+    db_module.put(module, data.get("moduleId"))
+
+    user = db_user.get(data.get("userId"))
+    user["modules"] = [module for module in user["modules"] if module["id"] != data.get("moduleId")]
+    db_user.put(user, data.get("userId"))
+    return "success"
+
 @app.route('/module/announcement/make/<moduleId>', methods=["POST"])
 def makeAnnoucement(moduleId):
     module = db_module.get(moduleId)
