@@ -282,6 +282,33 @@ def updateAnnoucement(moduleId, announcementId):
     db_module.put(module, moduleId)
     return "success"
 
+@app.route('/module/quest/make/<moduleId>', methods=["POST"])
+def makeQuest(moduleId):
+    module = db_module.get(moduleId)
+    data = request.get_json(force=True)
+    currentQuests = module.get('quests')
+    currentQuests.append(data)
+    db_module.put(module, moduleId)
+    return "success"
+
+@app.route('/module/quest/delete/<moduleId>/<questId>', methods=["DELETE"])
+def deleteQuest(moduleId, questId):
+    module = db_module.get(moduleId)
+    currentquests = module.get('quests')
+    module['quests'] = [quest for quest in currentquests if quest.get('id') != questId]
+    db_module.put(module, moduleId)
+    return "success"
+
+@app.route('/module/quest/update/<moduleId>/<questId>', methods=["POST"])
+def updateQuest(moduleId, questId):
+    data = request.get_json(force=True)
+    module = db_module.get(moduleId)
+    currentquests = module.get('quests')
+    module['quests'] = [quest for quest in currentquests if quest.get('id') != questId]
+    module['quests'].append(data)
+    db_module.put(module, moduleId)
+    return "success"
+
 #### USER DATA STUFF ############
 
 @app.route('/user/make', methods=["POST"])
