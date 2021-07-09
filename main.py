@@ -51,6 +51,11 @@ def getQuizById(quizId):
 def getAllQuiz():
     return jsonify(next(db_quiz.fetch()))
 
+@app.route('/quiz/update', methods=["POST"])
+def updateQuiz():
+    data = request.get_json(force=True)
+    db_quiz.put(data, data["id"])
+    return "success"
 
 @app.route('/quiz/collate', methods=["POST"])
 def postQuiz():
