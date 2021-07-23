@@ -15,13 +15,9 @@ app = Flask(__name__)
 CORS(app)
 
 
-@app.route("/quiz/question/<moduleId>/<questionId>", methods=["GET"])
-def getQuestionById(moduleId, questionId):
-    questions = db_module.get(moduleId).get("questions")
-    question = list(
-        filter(lambda question: question.get("id") == questionId, questions)[0]
-    )
-    return jsonify(question)
+@app.route("/quiz/question/<questionId>", methods=["GET"])
+def getQuestionById(questionId):
+    return jsonify(db_question.get(questionId))
 
 
 @app.route("/quiz/question", methods=["GET"])
@@ -29,35 +25,25 @@ def getAllQuestion():
     return jsonify(next(db_question.fetch()))
 
 
-@app.route("/quiz/question/all/<moduleId>", methods=["GET"])
-def getAllQuestionByModule(moduleId):
-    questions = db_module.get(moduleId).get("questions")
-    return jsonify(questions)
-
-
 @app.route("/quiz/make", methods=["POST"])
 def postQuestion():
     data = request.get_json(force=True)
-    question = data.get("question")
     if data is None:
         return jsonify({"error": "Not in JSON format"})
-    if "id" not in question:
+    if "id" not in data:
         return jsonify({"error": "No ID"})
-    if "modules" not in question:
+    if "modules" not in data:
         return jsonify({"error": "No modules"})
-    if "type" not in question:
+    if "type" not in data:
         return jsonify({"error": "No type"})
-    if "question" not in question:
+    if "question" not in data:
         return jsonify({"error": "No question"})
-    if "correct_answers" not in question:
+    if "correct_answers" not in data:
         return jsonify({"error": "No correct answers"})
-    if "incorrect_answers" not in question:
+    if "incorrect_answers" not in data:
         return jsonify({"error": "No incorrect answers"})
-    module = db_module.get(data.get("moduleId"))
-    questions = module.get("questions")
-    questions.append(question)
-    module["questions"] = questions
-    result = db_module.put(module, module["id"])
+    # use id received as key in deta base
+    result = db_question.put(request.json, data["id"])
     return jsonify(result, 201)
 
 
@@ -71,53 +57,36 @@ def getAllQuiz():
     return jsonify(next(db_quiz.fetch()))
 
 
-@app.route("/quiz/all/<moduleId>", methods=["GET"])
-def getAllQuizByModule(moduleId):
-    quizzes = db_module.get(moduleId).get("quizzes")
-    return jsonify(quizzes)
-
-
 @app.route("/quiz/update", methods=["POST"])
 def updateQuiz():
     data = request.get_json(force=True)
-    module = db_module.get(data.get("moduleId"))
-    quizzes = module.get("quizzes")
-    quizzes = list(
-        filter(lambda quiz: quiz.get("id") != data.get("quiz").get("id"), quizzes)
-    )
-    quizzes.append(data.get("quiz"))
-    module["quizzes"] = quizzes
-    db_module.put(module, module["id"])
+    db_quiz.put(data, data["id"])
     return "success"
 
 
 @app.route("/quiz/collate", methods=["POST"])
 def postQuiz():
     data = request.get_json(force=True)
-    quiz = data.get("quiz")
     if data is None:
         return jsonify({"error": "Not in JSON format"})
-    if "id" not in quiz:
+    if "id" not in data:
         return jsonify({"error": "No ID"})
-    if "modules" not in quiz:
+    if "modules" not in data:
         return jsonify({"error": "No modules"})
-    if "title" not in quiz:
+    if "title" not in data:
         return jsonify({"error": "No title"})
-    if "questions" not in quiz:
+    if "questions" not in data:
         return jsonify({"error": "No questions"})
-    if "tags" not in quiz:
+    if "tags" not in data:
         return jsonify({"error": "No tags"})
-    if "week" not in quiz:
+    if "week" not in data:
         return jsonify({"error": "No week"})
-    if "author" not in quiz:
+    if "author" not in data:
         return jsonify({"error": "No author"})
-    if "date" not in quiz:
+    if "date" not in data:
         return jsonify({"error": "No date"})
-    module = db_module.get(data.get("moduleId"))
-    quizzes = module.get("quizzes")
-    quizzes.append(quiz)
-    module["quizzes"] = quizzes
-    result = db_module.put(module, module["id"])
+    # use id received as key in deta base
+    result = db_quiz.put(request.json, data["id"])
     return jsonify(result, 201)
 
 
