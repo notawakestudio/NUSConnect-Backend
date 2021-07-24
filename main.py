@@ -157,7 +157,8 @@ def postPost():
     posts = module.get("posts")
     posts.append(data["post"])
     module["posts"] = posts
-    db_module.update(module, data.get("moduleId"))
+    print("hello")
+    db_module.put(module, data.get("moduleId"))
     return "DONE"
 
 
@@ -187,7 +188,7 @@ def postReply():
     replies = module.get("replies")
     replies.append(data["reply"])
     module["replies"] = replies
-    db_module.update(module, data.get("moduleId"))
+    db_module.put(module, data.get("moduleId"))
     return "DONE"
 
 
@@ -219,7 +220,7 @@ def update_post(postId):
             for key, val in data.get("post").items():
                 post[key] = val
     module["posts"] = posts
-    db_module.update(module, data.get("moduleId"))
+    db_module.put(module, data.get("moduleId"))
     return "DONE"
 
 
@@ -230,7 +231,7 @@ def delete_post(moduleId, postId):
     posts = module.get("posts")
     module["replies"] = list(filter(lambda reply: reply["post_id"] == postId, replies))
     module["posts"] = list(filter(lambda post: post["id"] != postId, posts))
-    db_module.update(module, moduleId)
+    db_module.put(module, moduleId)
     return "Deleted!"
 
 
@@ -256,7 +257,7 @@ def update_reply(replyId):
             for key, val in data.get("post").items():
                 reply[key] = val
     module["replies"] = replies
-    db_module.update(module, moduleId)
+    db_module.put(module, moduleId)
     return "DONE"
 
 
@@ -279,7 +280,7 @@ def update_reply_likes(replyId):
         if reply.get("id") == replyId:
             reply["up_votes"] = data.get("reply").get("up_votes")
     module["replies"] = replies
-    db_module.update(module, moduleId)
+    db_module.put(module, moduleId)
     return "DONE"
 
 
@@ -293,7 +294,7 @@ def update_post_likes(postId):
         if post.get("id") == postId:
             post["up_votes"] = data.get("post").get("up_votes")
     module["posts"] = posts
-    post = db_module.update(module, moduleId)
+    post = db_module.put(module, moduleId)
     return "DONE"
 
 
