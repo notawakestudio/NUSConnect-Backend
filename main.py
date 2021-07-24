@@ -87,7 +87,7 @@ def updateQuiz():
     )
     quizzes.append(data.get("quiz"))
     module["quizzes"] = quizzes
-    db_module.put(module, module["id"])
+    db_module.update(module, module["id"])
     return "success"
 
 
@@ -127,64 +127,74 @@ def postQuiz():
 @app.route("/post/make", methods=["POST"])
 def postPost():
     data = request.get_json(force=True)
+    moduleId = data.get("moduleId")
     if data is None:
         return jsonify({"error": "Not in JSON format"})
-    if "id" not in data:
+    if "id" not in data["post"]:
         return jsonify({"error": "No ID"})
-    if "content" not in data:
+    if "content" not in data["post"]:
         return jsonify({"error": "No content"})
-    if "title" not in data:
+    if "title" not in data["post"]:
         return jsonify({"error": "No title"})
-    if "reply_count" not in data:
+    if "reply_count" not in data["post"]:
         return jsonify({"error": "No reply count"})
-    if "tags" not in data:
+    if "tags" not in data["post"]:
         return jsonify({"error": "No tags"})
-    if "week" not in data:
+    if "week" not in data["post"]:
         return jsonify({"error": "No week"})
-    if "author_id" not in data:
+    if "author_id" not in data["post"]:
         return jsonify({"error": "No author"})
-    if "created_date" not in data:
+    if "created_date" not in data["post"]:
         return jsonify({"error": "No created date"})
-    if "edited_date" not in data:
+    if "edited_date" not in data["post"]:
         return jsonify({"error": "No edited date"})
-    if "up_votes" not in data:
+    if "up_votes" not in data["post"]:
         return jsonify({"error": "No up votes"})
-    if "is_edited" not in data:
+    if "is_edited" not in data["post"]:
         return jsonify({"error": "No is edited"})
     # use id received as key in deta base
-    result = db_post.put(request.json, data["id"])
-    return jsonify(result, 201)
+    module = db_module.get(moduleId)
+    posts = module.get("posts")
+    posts.append(data["post"])
+    module["posts"] = posts
+    db_module.update(module, data.get("moduleId"))
+    return "DONE"
 
 
 @app.route("/reply/make", methods=["POST"])
 def postReply():
     data = request.get_json(force=True)
+    moduleId = data.get("moduleId")
     if data is None:
         return jsonify({"error": "Not in JSON format"})
-    if "id" not in data:
+    if "id" not in data["reply"]:
         return jsonify({"error": "No ID"})
-    if "post_id" not in data:
+    if "post_id" not in data["reply"]:
         return jsonify({"error": "No post_id"})
-    if "author_id" not in data:
+    if "author_id" not in data["reply"]:
         return jsonify({"error": "No author_id"})
-    if "content" not in data:
+    if "content" not in data["reply"]:
         return jsonify({"error": "No content"})
-    if "created_date" not in data:
+    if "created_date" not in data["reply"]:
         return jsonify({"error": "No created_date"})
-    if "edited_date" not in data:
+    if "edited_date" not in data["reply"]:
         return jsonify({"error": "No edited_date"})
-    if "up_votes" not in data:
+    if "up_votes" not in data["reply"]:
         return jsonify({"error": "No up_votes"})
-    if "is_edited" not in data:
+    if "is_edited" not in data["reply"]:
         return jsonify({"error": "No is_edited"})
-    # use id received as key in deta base
-    result = db_reply.put(request.json, data["id"])
-    return jsonify(result, 201)
+    module = db_module.get(moduleId)
+    replies = module.get("replies")
+    replies.append(data["reply"])
+    module["replies"] = replies
+    db_module.update(module, data.get("moduleId"))
+    return "DONE"
 
 
-@app.route("/forum/post", methods=["GET"])
-def getAllPost():
-    return jsonify(next(db_post.fetch()))
+@app.route("/forum/post/<moduleId>", methods=["GET"])
+def getAllPost(moduleId):
+    posts = db_module.get(moduleId).get("posts")
+    return jsonify(posts)
 
 
 @app.route("/forum/reply", methods=["GET"])
@@ -192,24 +202,35 @@ def getAllReply():
     return jsonify(next(db_reply.fetch()))
 
 
-@app.route("/forum/post/<postId>", methods=["GET"])
-def getPostById(postId):
-    return jsonify(db_post.get(postId))
+@app.route("/forum/post/<moduleId>/<postId>", methods=["GET"])
+def getPostById(moduleId, postId):
+    posts = db_module.get(moduleId).get("posts")
+    post = next((item for item in posts if item["id"] == postId), None)
+    return jsonify(post)
 
 
 @app.route("/post/update/<postId>", methods=["POST"])
 def update_post(postId):
     data = request.get_json(force=True)
-    post = db_post.update(data, postId)
-    return data
+    module = db_module.get(data.get("moduleId"))
+    posts = module.get("posts")
+    for post in posts:
+        if post["id"] == postId:
+            for key, val in data.get("post").items():
+                post[key] = val
+    module["posts"] = posts
+    db_module.update(module, data.get("moduleId"))
+    return "DONE"
 
 
-@app.route("/post/update/<postId>", methods=["DELETE"])
-def delete_post(postId):
-    db_post.delete(postId)
-    list_of_replies = list(next(db_reply.fetch({"post_id": postId})))
-    for reply in list_of_replies:
-        db_reply.delete(reply.get("id"))
+@app.route("/post/delete/<moduleId>/<postId>", methods=["DELETE"])
+def delete_post(moduleId, postId):
+    module = db_module.get(moduleId)
+    replies = module.get("replies")
+    posts = module.get("posts")
+    module["replies"] = list(filter(lambda reply: reply["post_id"] == postId, replies))
+    module["posts"] = list(filter(lambda post: post["id"] != postId, posts))
+    db_module.update(module, moduleId)
     return "Deleted!"
 
 
@@ -218,35 +239,61 @@ def getReplyById(replyId):
     return jsonify(db_reply.get(replyId))
 
 
-@app.route("/forum/reply/related/<postId>", methods=["GET"])
-def getRelatedRepliesByPostId(postId):
-    return jsonify(next(db_reply.fetch({"post_id": postId})))
+@app.route("/forum/reply/related/<moduleId>/<postId>", methods=["GET"])
+def getRelatedRepliesByPostId(moduleId, postId):
+    replies = db_module.get(moduleId).get("replies")
+    return jsonify(list(filter(lambda reply: reply["post_id"] == postId, replies)))
 
 
 @app.route("/reply/update/<replyId>", methods=["POST"])
 def update_reply(replyId):
     data = request.get_json(force=True)
-    reply = db_reply.update(data, replyId)
-    return reply
+    moduleId = data.get("moduleId")
+    module = db_module.get(moduleId)
+    replies = module.get("replies")
+    for reply in replies:
+        if reply.get("id") == replyId:
+            for key, val in data.get("post").items():
+                reply[key] = val
+    module["replies"] = replies
+    db_module.update(module, moduleId)
+    return "DONE"
 
 
-@app.route("/reply/update/<replyId>", methods=["DELETE"])
-def delete_reply(replyId):
-    db_reply.delete(replyId)
+@app.route("/reply/delete/<moduleId>/<replyId>", methods=["DELETE"])
+def delete_reply(moduleId, replyId):
+    module = db_module.get(moduleId)
+    replies = module.get("replies")
+    module["replies"] = list(filter(lambda reply: reply["id"] != replyId, replies))
+    db_module.update(module, moduleId)
     return "DONE"
 
 
 @app.route("/reply/update/likes/<replyId>", methods=["POST"])
 def update_reply_likes(replyId):
     data = request.get_json(force=True)
-    reply = db_reply.update(data, replyId)
+    moduleId = data.get("moduleId")
+    module = db_module.get(moduleId)
+    replies = module.get("replies")
+    for reply in replies:
+        if reply.get("id") == replyId:
+            reply["up_votes"] = data.get("reply").get("up_votes")
+    module["replies"] = replies
+    db_module.update(module, moduleId)
     return "DONE"
 
 
 @app.route("/post/update/likes/<postId>", methods=["POST"])
 def update_post_likes(postId):
     data = request.get_json(force=True)
-    post = db_post.update(data, postId)
+    moduleId = data.get("moduleId")
+    module = db_module.get(moduleId)
+    posts = module.get("posts")
+    for post in posts:
+        if post.get("id") == postId:
+            post["up_votes"] = data.get("post").get("up_votes")
+    module["posts"] = posts
+    post = db_module.update(module, moduleId)
     return "DONE"
 
 
