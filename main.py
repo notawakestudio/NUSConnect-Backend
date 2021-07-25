@@ -254,7 +254,7 @@ def update_reply(replyId):
     replies = module.get("replies")
     for reply in replies:
         if reply.get("id") == replyId:
-            for key, val in data.get("post").items():
+            for key, val in data.get("reply").items():
                 reply[key] = val
     module["replies"] = replies
     db_module.put(module, moduleId)
@@ -266,7 +266,7 @@ def delete_reply(moduleId, replyId):
     module = db_module.get(moduleId)
     replies = module.get("replies")
     module["replies"] = list(filter(lambda reply: reply["id"] != replyId, replies))
-    db_module.update(module, moduleId)
+    db_module.put(module, moduleId)
     return "DONE"
 
 
