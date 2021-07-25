@@ -437,6 +437,70 @@ def updateQuest(moduleId, questId):
     return "success"
 
 
+@app.route("/module/quest/check", methods=["POST"])
+def checkQuest():
+    data = request.get_json(force=True)
+    moduleId = data.get("moduleId")
+    userId = data.get("userId")
+    currentDateTime = data.get("currentDateTime")
+    module = db_module.get(moduleId)
+    user = db_user.get(userId)
+    currentquests = module.get("quests")
+    user_module_records = user.get("modules")
+    user_module_record = list(
+        filter(lambda mod: mod["id"] == moduleId, user_module_records)
+    )[0]
+    has_update = False
+    userQuests = user_module_record.get("quests")
+    questsForChecking = [
+        quest for quest in currentquests if quest.get("id") not in userQuests
+    ]
+    for quest in questsForChecking:
+        start_date = quest.get("start_date")
+        end_date = quest.get("end_date")
+        if start_date > currentDateTime or end_date < currentDateTime:
+            continue
+        if quest.get("type") == "forum":
+            count = quest.get("count")
+            reward = quest.get("reward")
+            exp = reward.get("exp")
+            badge = reward.get("badge")
+            user_post_count = len(user_module_record.get("posts"))
+            if user_post_count >= count:
+                user_module_record["quests"].append(quest["id"])
+                user_module_record["exp"] += exp
+                has_update = True
+                if badge is not "":
+                    user_module_record["badges"].append(badge)
+
+        if quest.get("type") == "quiz":
+            count = quest.get("count")
+            reward = quest.get("reward")
+            exp = reward.get("exp")
+            badge = reward.get("badge")
+            user_quiz_count = len(user_module_record.get("quizzes"))
+            if user_quiz_count >= count:
+                user_module_record["quests"].append(quest["id"])
+                user_module_record["exp"] += exp
+                has_update = True
+                if badge is not "":
+                    user_module_record["badges"].append(badge)
+
+    if not has_update:
+        return "nothing to update"
+    for modRec in user_module_records:
+        if (
+            modRec.get("id") == user_module_record.get("id")
+            and modRec != user_module_record
+        ):
+            modRec["quests"] = user_module_record["quests"]
+            modRec["exp"] = user_module_record["exp"]
+            modRec["badges"] = user_module_record["badges"]
+    user["modules"] = user_module_records
+    db_user.put(user, userId)
+    return "success"
+
+
 #### USER DATA STUFF ############
 
 
@@ -486,6 +550,32 @@ def update_user(userId):
     data = request.get_json(force=True)
     updated = db_user.update(data, userId)
     return data
+
+
+@app.route("/user/update/post/<userId>", methods=["POST"])
+def update_user_post(userId):
+    data = request.get_json(force=True)
+    user = db_user.get(userId)
+    modules = user.get("modules")
+    for module in modules:
+        if module["id"] == data.get("moduleId"):
+            module["posts"].append(data.get("postId"))
+    user["modules"] = modules
+    db_user.put(user, userId)
+    return "DONE"
+
+
+@app.route("/user/update/quiz/<userId>", methods=["POST"])
+def update_user_quiz(userId):
+    data = request.get_json(force=True)
+    user = db_user.get(userId)
+    modules = user.get("modules")
+    for module in modules:
+        if module["id"] == data.get("moduleId"):
+            module["quizzes"].append(data.get("quizRecord"))
+    user["modules"] = modules
+    db_user.put(user, userId)
+    return "DONE"
 
 
 @app.route("/user/inbox/<userId>", methods=["GET"])
