@@ -61,6 +61,81 @@ def postQuestion():
     return jsonify(result, 201)
 
 
+@app.route("/quiz/make/multiple", methods=["POST"])
+def postMultipleQuestion():
+    data = request.get_json(force=True)
+    if data is None:
+        return jsonify({"error": "Not in JSON format"})
+    new_questions = data.get("questions")
+    for question in new_questions:
+        if "id" not in question:
+            return jsonify({"error": "No ID"})
+        if "modules" not in question:
+            return jsonify({"error": "No modules"})
+        if "type" not in question:
+            return jsonify({"error": "No type"})
+        if "question" not in question:
+            return jsonify({"error": "No question"})
+        if "correct_answers" not in question:
+            return jsonify({"error": "No correct answers"})
+        if "incorrect_answers" not in question:
+            return jsonify({"error": "No incorrect answers"})
+    module = db_module.get(data.get("moduleId"))
+    questions = module.get("questions")
+    questions.extend(new_questions)
+    module["questions"] = questions
+    result = db_module.put(module, module["id"])
+    return jsonify(result, 201)
+
+
+@app.route("/quiz/collate/make", methods=["POST"])
+def postQuizWithMultipleQuestion():
+    data = request.get_json(force=True)
+    if data is None:
+        return jsonify({"error": "Not in JSON format"})
+    quiz = data.get("quiz")
+    if "id" not in quiz:
+        return jsonify({"error": "No ID"})
+    if "modules" not in quiz:
+        return jsonify({"error": "No modules"})
+    if "title" not in quiz:
+        return jsonify({"error": "No title"})
+    if "questions" not in quiz:
+        return jsonify({"error": "No questions"})
+    if "tags" not in quiz:
+        return jsonify({"error": "No tags"})
+    if "week" not in quiz:
+        return jsonify({"error": "No week"})
+    if "author" not in quiz:
+        return jsonify({"error": "No author"})
+    if "date" not in quiz:
+        return jsonify({"error": "No date"})
+    module = db_module.get(data.get("moduleId"))
+    quizzes = module.get("quizzes")
+    quizzes.append(quiz)
+    module["quizzes"] = quizzes
+
+    new_questions = data.get("questions")
+    for question in new_questions:
+        if "id" not in question:
+            return jsonify({"error": "No ID"})
+        if "modules" not in question:
+            return jsonify({"error": "No modules"})
+        if "type" not in question:
+            return jsonify({"error": "No type"})
+        if "question" not in question:
+            return jsonify({"error": "No question"})
+        if "correct_answers" not in question:
+            return jsonify({"error": "No correct answers"})
+        if "incorrect_answers" not in question:
+            return jsonify({"error": "No incorrect answers"})
+    questions = module.get("questions")
+    questions.extend(new_questions)
+    module["questions"] = questions
+    result = db_module.put(module, module["id"])
+    return jsonify(result, 201)
+
+
 @app.route("/quiz/quiz/<quizId>", methods=["GET"])
 def getQuizById(quizId):
     return jsonify(db_quiz.get(quizId))
