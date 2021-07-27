@@ -33,6 +33,12 @@ def processUser(user):
 #############
 
 
+@app.route("/quiz/question/<moduleId>/", methods=["GET"])
+def handleRelatedQuestionEmpty(moduleId):
+    print("known front-end issue")
+    return jsonify("Not found", 404)
+
+
 @app.route("/quiz/question/<moduleId>/<questionId>", methods=["GET"])
 def getQuestionById(moduleId, questionId):
     questions = db_module.get(moduleId).get("questions")
