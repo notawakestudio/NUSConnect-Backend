@@ -14,19 +14,32 @@ db_user = deta.Base("nusconnect-user")
 app = Flask(__name__)
 CORS(app)
 
+# Helper
+def processUser(user):
+    modules = user.get("modules", [])
+    for module in modules:
+        if module.get("posts") is None:
+            module["posts"] = []
+        if module.get("quizzes") is None:
+            module["quizzes"] = []
+        if module.get("badges") is None:
+            module["badges"] = []
+        if module.get("quests") is None:
+            module["quests"] = []
+    user["modules"] = modules
+    return user
+
+
+#############
+
 
 @app.route("/quiz/question/<moduleId>/<questionId>", methods=["GET"])
 def getQuestionById(moduleId, questionId):
     questions = db_module.get(moduleId).get("questions")
-    question = list(
-        filter(lambda question: question.get("id") == questionId, questions)
-    )[0]
-    return jsonify(question)
-
-
-@app.route("/quiz/question/<moduleId>/", methods=["GET"])
-def handleQuestionIssue(moduleId):
-    return jsonify("OK", 200)
+    for question in questions:
+        if question.get("id") == questionId:
+            return jsonify(question)
+    return jsonify("Not found", 404)
 
 
 @app.route("/quiz/question", methods=["GET"])
@@ -58,10 +71,10 @@ def postQuestion():
         return jsonify({"error": "No correct answers"})
     if "incorrect_answers" not in question:
         return jsonify({"error": "No incorrect answers"})
-    result = db_module.update(
+    db_module.update(
         {"questions": db_module.util.append(question)}, data.get("moduleId")
     )
-    return jsonify(result, 201)
+    return jsonify("Ok", 201)
 
 
 @app.route("/quiz/make/multiple", methods=["POST"])
@@ -135,7 +148,7 @@ def postQuizWithMultipleQuestion():
         data.get("moduleId"),
     )
 
-    return jsonify({"result": "success"}, 201)
+    return jsonify("Ok", 201)
 
 
 @app.route("/quiz/quiz/<quizId>", methods=["GET"])
@@ -300,7 +313,7 @@ def delete_post(moduleId, postId):
     module = db_module.get(moduleId)
     replies = module.get("replies")
     posts = module.get("posts")
-    updated_replies = list(filter(lambda reply: reply["post_id"] == postId, replies))
+    updated_replies = list(filter(lambda reply: reply["post_id"] != postId, replies))
     updated_posts = list(filter(lambda post: post["id"] != postId, posts))
     db_module.update({"posts": updated_posts, "replies": updated_replies}, moduleId)
     return "Deleted!"
@@ -507,7 +520,7 @@ def checkQuest():
     userId = data.get("userId")
     currentDateTime = data.get("currentDateTime")
     module = db_module.get(moduleId)
-    user = db_user.get(userId)
+    user = processUser(db_user.get(userId))
     currentquests = module.get("quests", [])
     user_module_records = user.get("modules")
     user_module_record = {}
@@ -516,8 +529,6 @@ def checkQuest():
             user_module_record = user_module
     has_update = False
     userQuests = user_module_record.get("quests", [])
-    if userQuests is None:
-        userQuests = []
     questsForChecking = [
         quest for quest in currentquests if quest.get("id") not in userQuests
     ]
@@ -536,7 +547,7 @@ def checkQuest():
                 user_module_record["quests"].append(quest["id"])
                 user_module_record["exp"] += exp
                 has_update = True
-                if badge is not "":
+                if badge is not "" or badge is not None:
                     user_module_record["badges"].append(badge)
 
         if quest.get("type") == "quiz":
@@ -549,30 +560,19 @@ def checkQuest():
                 user_module_record["quests"].append(quest["id"])
                 user_module_record["exp"] += exp
                 has_update = True
-                if badge is not "":
+                if badge is not "" or badge is not None:
                     user_module_record["badges"].append(badge)
 
     if not has_update:
         return "nothing to update"
     for modRec in user_module_records:
-        if modRec.get("quests") is None:
-            modRec["quests"] = []
-        if modRec.get("badges") is None:
-            modRec["badges"] = []
         if (
             modRec.get("id") == user_module_record.get("id")
             and modRec != user_module_record
         ):
-            print(user_module_record["quests"])
-            print(user_module_record["badges"])
             modRec["quests"] = user_module_record["quests"]
             modRec["exp"] = user_module_record["exp"]
             modRec["badges"] = user_module_record["badges"]
-            if modRec.get("quests") is None:
-                modRec["quests"] = []
-            if modRec.get("badges") is None:
-                modRec["badges"] = []
-
     db_user.update({"modules": user_module_records}, userId)
     return "success"
 
@@ -608,7 +608,8 @@ def postUser():
 
 @app.route("/user/<userId>", methods=["GET"])
 def getUser(userId):
-    return jsonify(db_user.get(userId))
+    user = db_user.get(userId)
+    return jsonify(processUser(user))
 
 
 @app.route("/user/check/<userId>", methods=["GET"])
@@ -628,37 +629,35 @@ def update_user(userId):
     return data
 
 
+@app.route("/user/update/post/<userId>", methods=["POST"])
+def update_user_post(userId):
+    data = request.get_json(force=True)
+    user = processUser(db_user.get(userId))
+    modules = user.get("modules")
+    for module in modules:
+        if module["id"] == data.get("moduleId"):
+            module["posts"].append(data.get("postId"))
+    db_user.update({"modules": modules}, userId)
+    return "DONE"
+
+
 # @app.route("/user/update/post/<userId>", methods=["POST"])
 # def update_user_post(userId):
-#     return "OK!"
 #     data = request.get_json(force=True)
 #     user = db_user.get(userId)
 #     modules = user.get("modules")
 #     for module in modules:
 #         if module["id"] == data.get("moduleId"):
 #             module["posts"].append(data.get("postId"))
-#     db_user.update({"modules": modules}, userId)
+#     user["modules"] = modules
+#     db_user.put(user, userId)
 #     return "DONE"
-
-
-@app.route("/user/update/post/<userId>", methods=["POST"])
-def update_user_post(userId):
-    data = request.get_json(force=True)
-    user = db_user.get(userId)
-    modules = user.get("modules")
-    for module in modules:
-        if module["id"] == data.get("moduleId"):
-            module["posts"].append(data.get("postId"))
-    user["modules"] = modules
-    db_user.put(user, userId)
-    return "DONE"
 
 
 @app.route("/user/update/quiz/<userId>", methods=["POST"])
 def update_user_quiz(userId):
-    return "OK!"
     data = request.get_json(force=True)
-    user = db_user.get(userId)
+    user = processUser(db_user.get(userId))
     modules = user.get("modules")
     for module in modules:
         if module["id"] == data.get("moduleId"):
