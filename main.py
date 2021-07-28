@@ -30,6 +30,19 @@ def processUser(user):
     return user
 
 
+def checkBadgeAndAddHelper(user, moduleId, modules, badgeId, message):
+    has_update = False
+    for module in modules:
+        if module["id"] == moduleId and badgeId not in module["badges"]:
+            module["badges"].append(badgeId)
+            has_update = True
+    if has_update:
+        db_user.update(
+            {"modules": modules, "inbox": db_user.util.append(message)},
+            user["id"],
+        )
+
+
 #############
 
 
@@ -553,7 +566,11 @@ def checkQuest():
                 user_module_record["quests"].append(quest["id"])
                 user_module_record["exp"] += exp
                 has_update = True
-                if badge is not "" or badge is not None:
+                if (
+                    badge is not ""
+                    and badge is not None
+                    and badge not in user_module_record["badges"]
+                ):
                     user_module_record["badges"].append(badge)
 
         if quest.get("type") == "quiz":
@@ -566,7 +583,11 @@ def checkQuest():
                 user_module_record["quests"].append(quest["id"])
                 user_module_record["exp"] += exp
                 has_update = True
-                if badge is not "" or badge is not None:
+                if (
+                    badge is not ""
+                    and badge is not None
+                    and badge not in user_module_record["badges"]
+                ):
                     user_module_record["badges"].append(badge)
 
     if not has_update:
@@ -584,6 +605,29 @@ def checkQuest():
 
 
 #### USER DATA STUFF ############
+
+
+@app.route("/user/badge/check/<userId>", methods=["POST"])
+def checkBadgeAndAdd(userId):
+    data = request.get_json(force=True)
+    if data is None:
+        return jsonify({"error": "Not in JSON format"})
+    user = processUser(db_user.get(userId))
+    modules = user.get("modules")
+    has_update = False
+    for module in modules:
+        if module["id"] == data.get("moduleId"):
+            user_badges = module["badges"]
+            current_badge = data.get("badgeId")
+            if current_badge not in user_badges:
+                module["badges"].append(current_badge)
+                has_update = True
+    if has_update:
+        db_user.update(
+            {"modules": modules, "inbox": db_user.util.append(data.get("message"))},
+            userId,
+        )
+    return jsonify("Ok", 200)
 
 
 @app.route("/user/make", methods=["POST"])
